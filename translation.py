@@ -33,7 +33,6 @@ def convert_exon_pos_to_dict(exons_file):
     """
     the function get a file with the start and end positions of exons and return dict of chr and its exons' positions
     
-    
     Args:
         exons_file (txt file)
 
