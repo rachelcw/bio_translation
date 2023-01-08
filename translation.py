@@ -220,24 +220,7 @@ def information_gtf(chr,start,end):
         gene_name='intergenetic'
     return gene_name
 
-if __name__== "__main__":
-    parser = OptionParser()
-    parser.add_option("-i","--exons",dest="input",
-                help="txt file with start and end positions of the exons")
-    parser.add_option("-a","--fasta", dest="fasta",
-                help="fasta file- *.fa")
-    # parser.add_option("ifasta",
-    #             help="fasta index file- *.fai")
-    parser.add_option("-n", "--start-position", dest="n",default='0',
-                help="0- start from start postion(default), n- start read the sequence from the n position ") #TODO
-    parser.add_option("-s", "--start", dest="start",choices=['0','5','3'], default='0',
-                help="0- start from start codon(default) 5- start from 5 prime 3-start from 3 prime ")
-    parser.add_option("-f", "--frame", dest="frame",default='1',choices=['1','3','6'],
-                help="read frame: 1(default), 3 (1,2,3 frame), 6 (1,2,3 frame from 5 and 3 prime")
-    parser.add_option("-o", "--out", dest="output", default = 'protein',
-                  help="output filename with its path ")
-    
-    (options, args) = parser.parse_args()
+def main(options, args):
     
     if options.input == None:
         sys.stderr.write("Error: no input file provided...\n")
@@ -272,3 +255,24 @@ if __name__== "__main__":
                     f.write(title)
                     f.write(f'frame -{i-2}\n')
                 f.write(protein+'\n')
+
+if __name__== "__main__":
+    parser = OptionParser()
+    parser.add_option("-i","--exons",dest="input",
+                help="txt file with start and end positions of the exons")
+    parser.add_option("-a","--fasta", dest="fasta",
+                help="fasta file- *.fa")
+    # parser.add_option("ifasta",
+    #             help="fasta index file- *.fai")
+    parser.add_option("-n", "--start-position", dest="n",default='0',
+                help="0- start from start postion(default), n- start read the sequence from the n position ") #TODO
+    parser.add_option("-s", "--start", dest="start",choices=['0','5','3'], default='0',
+                help="0- start from start codon(default) 5- start from 5 prime 3-start from 3 prime ")
+    parser.add_option("-f", "--frame", dest="frame",default='1',choices=['1','3','6'],
+                help="read frame: 1(default), 3 (1,2,3 frame), 6 (1,2,3 frame from 5 and 3 prime")
+    parser.add_option("-o", "--out", dest="output", default = 'protein',
+                  help="output filename with its path ")
+    
+    main(parser.parse_args())
+    
+    
