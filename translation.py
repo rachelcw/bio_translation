@@ -219,42 +219,7 @@ def information_gtf(chr,start,end):
     if gene_name==[]:
         gene_name='intergenetic'
     return gene_name
-
-def main(options, args):
     
-    if options.input == None:
-        sys.stderr.write("Error: no input file provided...\n")
-        exit(0)
-        
-    if options.fasta == None:
-        options.fasta="/private1/private/resources/Homo_sapiens_assembly19.fasta"
-        
-    # if options.ifasta == None:
-    #     options.ifasta="/private1/private/resources/Homo_sapiens_assembly19.fasta.fai"
-
-    exons_file=options.input
-    fasta =fa.Fasta(options.fasta)
-    # fai=options.ifasta
-    n=int(options.n)
-    startr=int(options.start)
-    frame=int(options.frame)
-    final_position,exons=convert_exon_pos_to_dict(exons_file) #dict[chr]=[[start,end]...]
-    genes_seq=get_seq(exons,fasta) #dict[chr]=seq
-    with open(options.output, "w") as f:
-        for chr,seq in genes_seq.items():
-            seq=start_read(seq,n, startr)
-            translate=frame_read(seq, frame)
-            # strand,gene_name=information_gtf(chr,final_position[chr][0],final_position[chr][1])
-            gene_name=information_gtf(chr,final_position[chr][0],final_position[chr][1])
-            title=f'>{chr}:{final_position[chr][0]}-{final_position[chr][1]}|{gene_name}|'
-            for i,protein in enumerate(translate):
-                if i <=2:
-                    f.write(title)
-                    f.write(f'frame +{i+1}\n')
-                elif i>2:
-                    f.write(title)
-                    f.write(f'frame -{i-2}\n')
-                f.write(protein+'\n')
 
 if __name__== "__main__":
     parser = OptionParser()
@@ -273,6 +238,40 @@ if __name__== "__main__":
     parser.add_option("-o", "--out", dest="output", default = 'protein',
                   help="output filename with its path ")
     
-    main(parser.parse_args())
+    options, args= parser.parse_args()
+
+    if options.input == None:
+        sys.stderr.write("Error: no input file provided...\n")
+        exit(0)
+        
+    if options.fasta == None:
+        options.fasta="/private1/private/resources/Homo_sapiens_assembly19.fasta"
+        
+    # if options.ifasta == None:
+    #     options.ifasta="/private1/private/resources/Homo_sapiens_assembly19.fasta.fai"
+    
+    exons_file=options.input
+    fasta =fa.Fasta(options.fasta)
+    # fai=options.ifasta
+    n=int(options.n)
+    startr=int(options.start) # strat read from..
+    frame=int(options.frame)
+    final_position,exons=convert_exon_pos_to_dict(exons_file) #dict[chr]=[[start,end]...]
+    genes_seq=get_seq(exons,fasta) #dict[chr]=seq
+    with open(options.output, "w") as f:
+        for chr,seq in genes_seq.items():
+            seq=start_read(seq,n, startr)
+            translate=frame_read(seq, frame)
+            # strand,gene_name=information_gtf(chr,final_position[chr][0],final_position[chr][1])
+            gene_name=information_gtf(chr,final_position[chr][0],final_position[chr][1])
+            title=f'>{chr}:{final_position[chr][0]}-{final_position[chr][1]}|{gene_name}|'
+            for i,protein in enumerate(translate):
+                if i <=2:
+                    f.write(title)
+                    f.write(f'frame +{i+1}\n')
+                elif i>2:
+                    f.write(title)
+                    f.write(f'frame -{i-2}\n')
+                f.write(protein+'\n')
     
     
