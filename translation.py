@@ -217,7 +217,7 @@ def information_gtf(chr,start,end):
     data.index()
     gene_name=data.gene_names_at_locus(chr,int(start),int(end))
     if gene_name==[]:
-        gene_name='intergenetic'
+        gene_name='intergenic'
     return gene_name
     
 
@@ -256,6 +256,9 @@ if __name__== "__main__":
     n=int(options.n)
     startr=int(options.start) # strat read from..
     frame=int(options.frame)
+    if frame>1:
+        # when the frames are not one, start read the from the beginning, not from AUG
+        startr=5
     final_position,exons=convert_exon_pos_to_dict(exons_file) #dict[chr]=[[start,end]...]
     genes_seq=get_seq(exons,fasta) #dict[chr]=seq
     with open(options.output, "w") as f:
