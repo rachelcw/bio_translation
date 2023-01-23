@@ -7,7 +7,7 @@ import csv
 from Bio.Seq import reverse_complement
 from Bio.Seq import translate
 
-
+# dna -> rna- reverse dna or only transcribe? -> protein
 
 # codon table to prtoein #
 table = {
@@ -119,8 +119,11 @@ def frame_read(seq,frame):
             translate.append(translation(seq))
     if frame == 3 or frame == 6:
            frame1=translation(seq)
+           print(frame1)
            frame2=translation(seq[1:])
+           print(frame2)
            frame3=translation(seq[2:])
+           print(frame3)
            translate.extend([frame1,frame2,frame3])
     if frame == 6:
             frame4=translation(seq[::-1])
@@ -139,7 +142,9 @@ def translation(seq):
     Returns:
         string of amino acid
     """
+    print("before",seq)
     seq=transcribe(seq) # transcribe to cdna(rna) for translation
+    print("after",seq)
     protein = []
     for i in range(0,len(seq),3):
         codon = seq[i:i+3]
@@ -150,7 +155,7 @@ def translation(seq):
                  # stop translation when there is a stop codon 
                 break
             protein.append(aminoacid)
-        else:
+        elif len(codon)%3 == 0:
             protein.append("N")         
     return "".join(protein)
     # protein=translate(seq)
@@ -207,7 +212,10 @@ def translation(seq):
 
 def transcribe(seq):
     # Convert the transcript sequence to cDNA
-    return reverse_complement(seq)
+    print(seq)
+    seq = seq.translate(str.maketrans({'A': 'T', 'T': 'A','C':'G','G':'C'}))
+    print(seq)
+    return seq
 
 def information_gtf(chr,start,end):
     data = pyensembl.Genome(
@@ -231,7 +239,7 @@ if __name__== "__main__":
     #             help="fasta index file- *.fai")
     parser.add_option("-n", "--start-position", dest="n",default='0',
                 help="0- start from start postion(default), n- start read the sequence from the n position ") #TODO
-    parser.add_option("-s", "--start", dest="start",choices=['0','5','3'], default='0',
+    parser.add_option("-s", "--start", dest="start",choices=['0','5','3'], default='5',
                 help="0- start from start codon(default) 5- start from 5 prime 3-start from 3 prime ")
     parser.add_option("-f", "--frame", dest="frame",default='1',choices=['1','3','6'],
                 help="read frame: 1(default), 3 (1,2,3 frame), 6 (1,2,3 frame from 5 and 3 prime")
@@ -256,9 +264,9 @@ if __name__== "__main__":
     n=int(options.n)
     startr=int(options.start) # strat read from..
     frame=int(options.frame)
-    if frame>1:
-        # when the frames are not one, start read the from the beginning, not from AUG
-        startr=5
+    # if frame>1:
+    #     # when the frames are not one, start read the from the beginning, not from AUG
+    #     startr=5
     final_position,exons=convert_exon_pos_to_dict(exons_file) #dict[chr]=[[start,end]...]
     genes_seq=get_seq(exons,fasta) #dict[chr]=seq
     with open(options.output, "w") as f:
