@@ -4,9 +4,6 @@ from optparse import OptionParser
 import pyfaidx as fa
 import pyensembl
 import csv
-# from Bio.Seq import translate
-
-# dna -> rna- reverse dna or only transcribe? -> protein
 
 # codon table to prtoein #
 table = {
@@ -58,7 +55,6 @@ def convert_exon_pos_to_dict(exons_file):
         for chr in exons.keys():
             exons[chr].sort()
             final_position[chr]=[np.min(exons[chr]),np.max(exons[chr])]
-        print(exons.items())
     return final_position,exons
 
 
@@ -120,11 +116,11 @@ def frame_read(seq,frame):
             translate.append(translation(seq))
     if frame == 3 or frame == 6:
            frame1=translation(seq)
-           print(frame1)
+           print("frame1", frame1)
            frame2=translation(seq[1:])
-           print(frame2)
+           print("frame2", frame2)
            frame3=translation(seq[2:])
-           print(frame3)
+           print("frame3", frame3)
            translate.extend([frame1,frame2,frame3])
     if frame == 6:
             frame4=translation(seq[::-1])
@@ -157,57 +153,7 @@ def translation(seq):
         elif len(codon)%3 == 0:
             protein.append("N")         
     return "".join(protein)
-    # protein=translate(seq)
-    # return protein
-
-# def transcript_gtf(fasta):
-#     genes=[]
-#     # Open the GTF file
-#     with open("/private1/private/resources/gencode19_noChrPrefix_mitoMT.gtf") as f:
-#         # Read the GTF file as a CSV
-#         reader = csv.reader(f, delimiter="\t")
-
-#         # Iterate over the rows in the GTF file
-#         for row in reader:
-#             if row[0].startswith('#'):
-#                 continue
-#             # Check if the feature is a transcript
-#             elif row[2] == "transcript":
-#                 # Get the chromosome and start/end positions of the transcript
-#                 chromosome = row[0]
-#                 start = int(row[3]) - 1  # GTF is 1-based, pyfaidx is 0-based
-#                 end = int(row[4])
-
-#                 # Get the sequence object for the chromosome
-#                 seq = fasta[chromosome]
-
-#                 # Extract the transcript sequence
-#                 transcript_seq = seq[start:end]
-#                 genes.append([chromosome,start,end,transcript_seq])
-
-# def exon_gtf():
-# # Open the GTF file
-#     with open("path/to/file.gtf") as f:
-#     # Read the GTF file as a CSV
-#         reader = csv.reader(f, delimiter="\t")
-
-#         # Iterate over the rows in the GTF file
-#         for row in reader:
-#             # Check if the feature is an exon
-#             if row[2] == "exon":
-#                 # Get the chromosome and start/end positions of the exon
-#                 chromosome = row[0]
-#                 start = int(row[3]) - 1  # GTF is 1-based, pyfaidx is 0-based
-#                 end = int(row[4])
-
-#                 # Get the sequence object for the chromosome
-#                 seq = fasta[chromosome]
-
-#                 # Extract the exon sequence
-#                 exon_seq = seq[start:end]
-
-#                 # Print the exon sequence
-#                 print(exon_seq)
+    
 
 def information_gtf(chr,start,end):
     data = pyensembl.Genome(
@@ -247,9 +193,6 @@ if __name__== "__main__":
     if options.fasta == None:
         options.fasta="/private1/private/resources/Homo_sapiens_assembly19.fasta"
         
-    # if options.ifasta == None:
-    #     options.ifasta="/private1/private/resources/Homo_sapiens_assembly19.fasta.fai"
-    
     exons_file=options.input
     fasta =fa.Fasta(options.fasta)
     # fai=options.ifasta
@@ -257,10 +200,10 @@ if __name__== "__main__":
     startr=int(options.start) # strat read from..
     frame=int(options.frame)
     if frame>1:
-        # when the frames are not one, start read the from the beginning, not from AUG
+        # when the frame are not one, start read from the beginning, not from AUG
         startr=5
     final_position,exons=convert_exon_pos_to_dict(exons_file) #dict[chr]=[[start,end]...]
-    genes_seq=get_seq(exons,fasta) #dict[chr]=seq
+    genes_seq=get_seq(exons,fasta) #dict[chr]=seq #TODO what happen when we have more than one gene from the same chr
     with open(options.output, "w") as f:
         for chr,seq in genes_seq.items():
             seq=start_read(seq,n, startr)
@@ -271,10 +214,10 @@ if __name__== "__main__":
             for i,protein in enumerate(translate):
                 if i <=2:
                     f.write(title)
-                    f.write(f'frame +{i+1}\n')
+                    f.write(f'frame+{i+1}\n')
                 elif i>2:
                     f.write(title)
-                    f.write(f'frame -{i-2}\n')
+                    f.write(f'frame-{i-2}\n')
                 f.write(protein+'\n')
     
     
