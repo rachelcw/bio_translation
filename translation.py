@@ -4,7 +4,7 @@ from optparse import OptionParser
 import pyfaidx as fa
 import pyensembl
 import csv
-
+import pandas as pd
 # codon table to prtoein #
 table = {
     'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M',
@@ -24,42 +24,95 @@ table = {
     'TAC':'Y', 'TAT':'Y', 'TAA':'*', 'TAG':'*',
     'TGC':'C', 'TGT':'C', 'TGA':'*', 'TGG':'W',
     }
+
+def get_args():
+    parser = OptionParser()
+    parser.add_option("-i","--exons",dest="input",
+                help="txt file with start and end positions of the exons")
+    parser.add_option("-a","--fasta", dest="fasta",
+                help="fasta file- *.fa")
+    # parser.add_option("ifasta",
+    #             help="fasta index file- *.fai")
+    parser.add_option("-n", "--start-position", dest="n",default='0',
+                help="0- start from start postion(default), n- start read the sequence from the n position ") #TODO
+    parser.add_option("-s", "--start", dest="start",choices=['0','5','3'], default='0',
+                help="0- start from start codon(default) 5- start from 5 prime 3-start from 3 prime ")
+    parser.add_option("-f", "--frame", dest="frame",default='1',choices=['1','3','6'],
+                help="read frame: 1(default), 3 (1,2,3 frame), 6 (1,2,3 frame from 5 and 3 prime")
+    parser.add_option("-o", "--out", dest="output", default = 'protein',
+                  help="output filename with its path ")
     
-def convert_exon_pos_to_dict(exons_file):
-    """
-    the function get a file with the start and end positions of exons and return dict of chr and its exons' positions
+    options, args= parser.parse_args()
+
+    if options.input == None:
+        sys.stderr.write("Error: no input file provided...\n")
+        exit(0)
+        
+    if options.fasta == None:
+        options.fasta="/private1/private/resources/Homo_sapiens_assembly19.fasta"
+
+    # parser input argument 
+    input_file=options.input
+    fasta =fa.Fasta(options.fasta)
+    n=int(options.n)
+    startr=int(options.start) # strat read from..
+    frame=int(options.frame)
+    if frame>1:
+        # when the frame are not one, start read from the beginning, not from AUG
+        startr=5
     
-    Args:
-        exons_file (txt file)
+    return input_file,fasta,n,startr,frame,options.output
+    
+    
+# def get_junction_information(input_file):
+#     """
+#     the function get a file with the start and end positions of exons and return dict of chr and its exons' positions
+    
+#     Args:
+#         exons_file (txt file)
 
-    Returns:
-        list of the position of each exon[[start,end]...]
-    """
-    exons=dict()
-    final_position=dict()
-    with open(exons_file) as f:
-        # Read the file as a CSV
-        reader = csv.reader(f, delimiter="\t") #TODO what is sep
-        # Iterate over the rows in the file
-        for row in reader:
-            # Get the start and end positions
-            chr=row[0]
-            if chr.startswith('chr'):
-               chr=chr.replace('chr',"")
-            start = int(row[1])
-            end = int(row[2])
-            if chr not in exons.keys():
-                exons[chr]=[[start,end]]
-            else:
-                exons[chr].append([start,end])
-        for chr in exons.keys():
-            exons[chr].sort()
-            final_position[chr]=[np.min(exons[chr]),np.max(exons[chr])]
-    return final_position,exons
+#     Returns:
+#         list of the position of each exon[[start,end]...]
+#     """
+#     # bed_file = collections.namedtuple('junction', ['name', 'age', 'DOB'])
+#     # transcript=collections.namedtuple("transcript",['chr', 'start', 'end','strand','gene_id'])
+#     junction_df=pd.read_csv(input_file,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG","junction"])
+#     junc_tranacript=dict()
+#     for junction in junction_df["junction"].unique():
+#         junc_tranacript[junction]=[t for t in junction_df.loc[junction_df["junction"]==junction,"ENST"].unique()]
+
+#     for junction,transcripts in junc_tranacript.items():
+#         for t_id in transcript:
+            
+#         with open(input_file) as f:
+#         # Read the file as a CSV
+#         reader = csv.reader(f, delimiter="\t") 
+#         # Iterate over the rows in the file
+#         for row in reader:
+#             # Get the start and end positions
+#             chr=row[0]
+#             if chr.startswith('chr'):
+#                chr=chr.replace('chr',"")
+#             start = int(row[1])
+#             end = int(row[2])
+#             strand=row[3]
+#             t_id=row[4]
+#             gene_id=row[5]
+#             junction=row[6]
+#             transcript=transcript(chr,start,end,strand,gene_id)
+#             if junction not in junction_dict.keys():
+#                 junction_dict[junction]={t_id:transcript(chr,start,end,strand,gene_id)}
+                
+#             else:
+#                 if t_id not in junction_dict[junction].keys():
+#                     junction_dict[junction]={t_id:transcript(chr,start,end,strand,gene_id)}
+#                 else:
+#                     junction_dict[junction][t_id].append(transcript(chr,start,end,strand,gene_id))
+#     return junction_dict
 
 
-def get_seq(exons,fasta):
-    exons_seq=dict()
+def get_seq(locus,fasta):
+    # junction_seq=dict()
     """
     Extract the exons sequence from fasta file 
     Args:
@@ -69,14 +122,18 @@ def get_seq(exons,fasta):
     Returns:
         list with the sequences of the exons for each gene from fasta file 
     """
-    for chr in exons.keys():        
-        sequence=""
-        for start,end in exons[chr]:
-            seq=fasta[chr][start:end].seq
-            print("fasta",seq)
-            sequence=sequence+seq
-        exons_seq[chr]=sequence
-    return exons_seq
+    sequence=""
+    for exon in locus:        
+        seq=fasta[exon.chr][exon.start:exon.end].seq
+        sequence=sequence+seq
+    return sequence
+    # for junc in junction_dict.keys():        
+    #     sequence=""
+    #     for transrcript in junc.keys():
+    #         seq=fasta[exon.chr][exon.start:exon.end].seq
+    #         sequence=sequence+seq
+    #     junction_seq[junc]=sequence
+    # return junction_seq
 
 
 def start_read(rna_seq,n,start):
@@ -139,7 +196,6 @@ def translation(seq):
     Returns:
         string of amino acid
     """
-    print("before",seq)
     protein = []
     for i in range(0,len(seq),3):
         codon = seq[i:i+3]
@@ -166,58 +222,53 @@ def information_gtf(chr,start,end):
         gene_name='intergenic'
     return gene_name
     
+# def create_output_file(junction_dict,genes_seq,n,startr,frame,output_path):
+#      with open(output_path, "w") as f:
+#         for junc in junction_dict.keys():
+#             seq=genes_seq[junc]
+#         for chr,seq in genes_seq.items():
+#             seq=start_read(seq,n, startr)
+#             translate=frame_read(seq, frame)
+#             # strand,gene_name=information_gtf(chr,final_position[chr][0],final_position[chr][1])
+#             gene_name=information_gtf(chr,final_position[chr][0],final_position[chr][1])
+#             title=f'>{chr}:{final_position[chr][0]}-{final_position[chr][1]}|{gene_name}|'
+#             for i,protein in enumerate(translate):
+#                 if i <=2:
+#                     f.write(title)
+#                     f.write(f'frame+{i+1}\n')
+#                 elif i>2:
+#                     f.write(title)
+#                     f.write(f'frame-{i-2}\n')
+#                 f.write(protein+'\n')
+
+def get_intron(junc):
+      import re
+      return re.sub(r'clu_\d+_', '', junc)
+
+def write_output(seq,gene_id,t_id,junc,file):
+    with open(file, "w") as f:
+        f.write(f'>{gene_id}|{t_id}|{junc}\n')
+        f.write(seq+'\n')
 
 if __name__== "__main__":
-    parser = OptionParser()
-    parser.add_option("-i","--exons",dest="input",
-                help="txt file with start and end positions of the exons")
-    parser.add_option("-a","--fasta", dest="fasta",
-                help="fasta file- *.fa")
-    # parser.add_option("ifasta",
-    #             help="fasta index file- *.fai")
-    parser.add_option("-n", "--start-position", dest="n",default='0',
-                help="0- start from start postion(default), n- start read the sequence from the n position ") #TODO
-    parser.add_option("-s", "--start", dest="start",choices=['0','5','3'], default='0',
-                help="0- start from start codon(default) 5- start from 5 prime 3-start from 3 prime ")
-    parser.add_option("-f", "--frame", dest="frame",default='1',choices=['1','3','6'],
-                help="read frame: 1(default), 3 (1,2,3 frame), 6 (1,2,3 frame from 5 and 3 prime")
-    parser.add_option("-o", "--out", dest="output", default = 'protein',
-                  help="output filename with its path ")
-    
-    options, args= parser.parse_args()
+    input_file,fasta,n,startr,frame,output_path=get_args()
+    junction_df=pd.read_csv(input_file,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG","junction"])
+    with open(output_path, "w") as f:
+        for junc in junction_df["junction"].unique():
+            transcript=junction_df.loc[junction_df["junction"]==junc].unique()
+            for t in transcript:
+                exons=transcript.loc[transcript["ENST"]==t]
+                locus=[(exon.chr,exon.start,exon.end) for exon in exons.itertuples()]
+                seq=get_seq(locus,fasta)
+                intron=get_intron(junc)
+                f.write(f'>{exons["ENSG"][0]}|{t}|{intron}\n')
+                f.write(seq+'\n')
+             
+        
 
-    if options.input == None:
-        sys.stderr.write("Error: no input file provided...\n")
-        exit(0)
-        
-    if options.fasta == None:
-        options.fasta="/private1/private/resources/Homo_sapiens_assembly19.fasta"
-        
-    exons_file=options.input
-    fasta =fa.Fasta(options.fasta)
-    # fai=options.ifasta
-    n=int(options.n)
-    startr=int(options.start) # strat read from..
-    frame=int(options.frame)
-    if frame>1:
-        # when the frame are not one, start read from the beginning, not from AUG
-        startr=5
-    final_position,exons=convert_exon_pos_to_dict(exons_file) #dict[chr]=[[start,end]...]
-    genes_seq=get_seq(exons,fasta) #dict[chr]=seq #TODO what happen when we have more than one gene from the same chr
-    with open(options.output, "w") as f:
-        for chr,seq in genes_seq.items():
-            seq=start_read(seq,n, startr)
-            translate=frame_read(seq, frame)
-            # strand,gene_name=information_gtf(chr,final_position[chr][0],final_position[chr][1])
-            gene_name=information_gtf(chr,final_position[chr][0],final_position[chr][1])
-            title=f'>{chr}:{final_position[chr][0]}-{final_position[chr][1]}|{gene_name}|'
-            for i,protein in enumerate(translate):
-                if i <=2:
-                    f.write(title)
-                    f.write(f'frame+{i+1}\n')
-                elif i>2:
-                    f.write(title)
-                    f.write(f'frame-{i-2}\n')
-                f.write(protein+'\n')
+    # junction_dict=get_junction_information(input_file) #dict[chr]=[[start,end]...]
+    # genes_seq=get_seq(junction_dict,fasta) #dict[chr]=seq #TODO what happen when we have more than one gene from the same chr
+    # create_output_file(junction_dict,genes_seq,n,startr,frame,output_path)
+    
     
     
