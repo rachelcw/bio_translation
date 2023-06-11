@@ -1,10 +1,13 @@
+# python translation.py -i /home/ls/rachelcw/projects/BIO/cll_sf3b1_proteomics_original.txt -o /home/ls/rachelcw/projects/BIO/cll_sf3b1_proteomics_original_protein.txt
+
 import sys
-import numpy as np
+# import numpy as np
 from optparse import OptionParser
 import pyfaidx as fa
 import pyensembl
 import csv
 import pandas as pd
+
 # codon table to prtoein #
 table = {
     'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M',
@@ -31,8 +34,6 @@ def get_args():
                 help="txt file with start and end positions of the exons")
     parser.add_option("-a","--fasta", dest="fasta",
                 help="fasta file- *.fa")
-    # parser.add_option("ifasta",
-    #             help="fasta index file- *.fai")
     parser.add_option("-n", "--start-position", dest="n",default='0',
                 help="0- start from start postion(default), n- start read the sequence from the n position ") #TODO
     parser.add_option("-s", "--start", dest="start",choices=['0','5','3'], default='0',
@@ -41,6 +42,9 @@ def get_args():
                 help="read frame: 1(default), 3 (1,2,3 frame), 6 (1,2,3 frame from 5 and 3 prime")
     parser.add_option("-o", "--out", dest="output", default = 'protein',
                   help="output filename with its path ")
+    # parser.add_option("-t", "--type", dest="type", default = 'known',
+    #               help="type of outpot file: known or novel transcript ")
+    
     
     options, args= parser.parse_args()
 
@@ -111,7 +115,17 @@ def get_args():
 #     return junction_dict
 
 
-def get_seq(locus,fasta):
+def get_seq(locus,fasta,strand):
+    sequence=""
+    if strand == '-':
+        for exon in locus:     
+            seq=fasta[exon[0]][int(exon[1])-1:int(exon[2])].complement.reverse.seq
+            sequence=sequence+seq
+    else:
+        for exon in locus:     
+            seq=fasta[exon[0]][int(exon[1])-1:int(exon[2])].seq
+            sequence=sequence+seq
+    return sequence
     # junction_seq=dict()
     """
     Extract the exons sequence from fasta file 
@@ -122,11 +136,7 @@ def get_seq(locus,fasta):
     Returns:
         list with the sequences of the exons for each gene from fasta file 
     """
-    sequence=""
-    for exon in locus:        
-        seq=fasta[exon.chr][exon.start:exon.end].seq
-        sequence=sequence+seq
-    return sequence
+    
     # for junc in junction_dict.keys():        
     #     sequence=""
     #     for transrcript in junc.keys():
@@ -196,6 +206,7 @@ def translation(seq):
     Returns:
         string of amino acid
     """
+    # print(seq)
     protein = []
     for i in range(0,len(seq),3):
         codon = seq[i:i+3]
@@ -207,7 +218,8 @@ def translation(seq):
                 break
             protein.append(aminoacid)
         elif len(codon)%3 == 0:
-            protein.append("N")         
+            protein.append("N")
+    # print(protein)    
     return "".join(protein)
     
 
@@ -250,20 +262,29 @@ def write_output(seq,gene_id,t_id,junc,file):
         f.write(f'>{gene_id}|{t_id}|{junc}\n')
         f.write(seq+'\n')
 
+    
 if __name__== "__main__":
     input_file,fasta,n,startr,frame,output_path=get_args()
-    junction_df=pd.read_csv(input_file,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG","junction"])
     with open(output_path, "w") as f:
-        for junc in junction_df["junction"].unique():
-            transcript=junction_df.loc[junction_df["junction"]==junc].unique()
-            for t in transcript:
-                exons=transcript.loc[transcript["ENST"]==t]
+        data=pd.read_csv(input_file,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG","junction"])
+        # data=pd.read_csv(input_file,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG"])
+        # for gene in data["ENSG"].unique():
+        for junc in data["junction"].unique():
+            transcript=data[data["junction"]==junc]
+            # transcript=data[data["ENSG"]==gene]
+            gene_id=transcript["ENSG"].unique()[0]
+            for t in transcript["ENST"].unique():
+                exons=transcript[transcript["ENST"]==t]
                 locus=[(exon.chr,exon.start,exon.end) for exon in exons.itertuples()]
-                seq=get_seq(locus,fasta)
+                strand=exons["strand"].unique()[0]
+                seq=get_seq(locus,fasta,strand)
+                seq=start_read(seq,n, startr)
+                protein=translation(seq)
                 intron=get_intron(junc)
-                f.write(f'>{exons["ENSG"][0]}|{t}|{intron}\n')
-                f.write(seq+'\n')
-             
+                f.write(f'> {gene_id} | {t} | {intron} |\n')
+                # f.write(f'>{gene}|{t}\n')
+                # f.write(seq+'\n')
+                f.write(protein+'\n')
         
 
     # junction_dict=get_junction_information(input_file) #dict[chr]=[[start,end]...]
