@@ -1,4 +1,8 @@
-# python translation.py -i /home/ls/rachelcw/projects/BIO/cll_sf3b1_proteomics_original.txt -o /home/ls/rachelcw/projects/BIO/cll_sf3b1_proteomics_original_protein.txt
+'''
+conda activate bio
+cd bio_translation
+python translation.py -i /home/ls/rachelcw/projects/BIO/proteomics/cll_sf3b1_proteomics_novel.txt -o /home/ls/rachelcw/projects/BIO/proteomics/cll_sf3b1_proteomics_novel_protein.txt
+'''
 
 import sys
 # import numpy as np
@@ -157,7 +161,7 @@ def start_read(rna_seq,n,start):
     Returns:
         seq: the sequence after editing
     """
-    seq=rna_seq[n:] # TODO it's work the same for all sequnces- change?
+    seq=rna_seq[n:]
     if start == 0:
         #start from ATG
             seq=seq[seq.find('ATG'):]
@@ -257,17 +261,15 @@ def get_intron(junc):
       import re
       return re.sub(r'clu_\d+_', '', junc)
 
-def write_output(seq,gene_id,t_id,junc,file):
-    with open(file, "w") as f:
-        f.write(f'>{gene_id}|{t_id}|{junc}\n')
-        f.write(seq+'\n')
-
     
 if __name__== "__main__":
     input_file,fasta,n,startr,frame,output_path=get_args()
+    empty_protein=open('/home/ls/rachelcw/projects/BIO/proteomics/empty_protein.txt','w')
     with open(output_path, "w") as f:
-        data=pd.read_csv(input_file,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG","junction"])
+        data=pd.read_csv(input_file,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG","junction","start_read"])
         # data=pd.read_csv(input_file,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG"])
+        print(data.shape)
+        rows=0
         # for gene in data["ENSG"].unique():
         for junc in data["junction"].unique():
             transcript=data[data["junction"]==junc]
@@ -278,14 +280,23 @@ if __name__== "__main__":
                 locus=[(exon.chr,exon.start,exon.end) for exon in exons.itertuples()]
                 strand=exons["strand"].unique()[0]
                 seq=get_seq(locus,fasta,strand)
+                startr=exons["start_read"].unique()[0] # 5-from the start , 0-from start codon                
                 seq=start_read(seq,n, startr)
                 protein=translation(seq)
                 intron=get_intron(junc)
-                f.write(f'> {gene_id} | {t} | {intron} |\n')
+                if protein=='':
+                    empty_protein.write(f'{gene_id}\t{t}\t{intron}\n')
+                    continue
+                rows+=1
+                f.write(f'>{gene_id}|{t}|{intron}|\n')
                 # f.write(f'>{gene}|{t}\n')
                 # f.write(seq+'\n')
                 f.write(protein+'\n')
-        
+        print(rows)
+    empty_protein.close()
+
+
+
 
     # junction_dict=get_junction_information(input_file) #dict[chr]=[[start,end]...]
     # genes_seq=get_seq(junction_dict,fasta) #dict[chr]=seq #TODO what happen when we have more than one gene from the same chr
