@@ -58,7 +58,7 @@ def get_args():
         
     if options.fasta == None:
         options.fasta="/private1/private/resources/Homo_sapiens_assembly19.fasta"
-
+    
     # parser input argument 
     input_file=options.input
     fasta =fa.Fasta(options.fasta)
@@ -122,12 +122,12 @@ def get_args():
 def get_seq(locus,fasta,strand):
     sequence=""
     if strand == '-':
-        for exon in locus:     
+        for exon in locus:
             seq=fasta[exon[0]][int(exon[1])-1:int(exon[2])].complement.reverse.seq
             sequence=sequence+seq
-    else:
-        for exon in locus:     
-            seq=fasta[exon[0]][int(exon[1])-1:int(exon[2])].seq
+    else: # strand == '+'
+        for exon in locus: 
+            seq=fasta[str(exon[0])][exon[1]-1:exon[2]].seq
             sequence=sequence+seq
     return sequence
     # junction_seq=dict()
@@ -238,42 +238,31 @@ def information_gtf(chr,start,end):
         gene_name='intergenic'
     return gene_name
     
-# def create_output_file(junction_dict,genes_seq,n,startr,frame,output_path):
-#      with open(output_path, "w") as f:
-#         for junc in junction_dict.keys():
-#             seq=genes_seq[junc]
-#         for chr,seq in genes_seq.items():
-#             seq=start_read(seq,n, startr)
-#             translate=frame_read(seq, frame)
-#             # strand,gene_name=information_gtf(chr,final_position[chr][0],final_position[chr][1])
-#             gene_name=information_gtf(chr,final_position[chr][0],final_position[chr][1])
-#             title=f'>{chr}:{final_position[chr][0]}-{final_position[chr][1]}|{gene_name}|'
-#             for i,protein in enumerate(translate):
-#                 if i <=2:
-#                     f.write(title)
-#                     f.write(f'frame+{i+1}\n')
-#                 elif i>2:
-#                     f.write(title)
-#                     f.write(f'frame-{i-2}\n')
-#                 f.write(protein+'\n')
 
 def get_intron(junc):
       import re
       return re.sub(r'clu_\d+_', '', junc)
 
-    
-if __name__== "__main__":
-    input_file,fasta,n,startr,frame,output_path=get_args()
-    empty_protein=open('/home/ls/rachelcw/projects/BIO/proteomics/empty_protein.txt','w')
+def output_refernce_file(input_file,fasta,n,startr,frame,output_path):
+    with open(output_path, "w") as f:
+        data=pd.read_csv(input_file,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG"])
+        for gene in data["ENSG"].unique():
+            transcript=data[data["ENSG"]==gene]
+            for t in transcript["ENST"].unique():
+                exons=transcript[transcript["ENST"]==t]
+                locus=[(exon.chr,exon.start,exon.end) for exon in exons.itertuples()]
+                strand=exons["strand"].unique()[0]
+                seq=get_seq(locus,fasta,strand)
+                protein=translation(seq)
+                f.write(f'>{gene}|{t}\n')
+                f.write(f'{protein}\n')
+
+def output_novel_file(input_file,fasta,n,startr,frame,output_path):
+    empty_protein=open('/home/ls/rachelcw/projects/BIO/mutated/empty_protein.txt','w')
     with open(output_path, "w") as f:
         data=pd.read_csv(input_file,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG","junction","start_read"])
-        # data=pd.read_csv(input_file,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG"])
-        print(data.shape)
-        rows=0
-        # for gene in data["ENSG"].unique():
         for junc in data["junction"].unique():
             transcript=data[data["junction"]==junc]
-            # transcript=data[data["ENSG"]==gene]
             gene_id=transcript["ENSG"].unique()[0]
             for t in transcript["ENST"].unique():
                 exons=transcript[transcript["ENST"]==t]
@@ -287,20 +276,16 @@ if __name__== "__main__":
                 if protein=='':
                     empty_protein.write(f'{gene_id}\t{t}\t{intron}\n')
                     continue
-                rows+=1
                 f.write(f'>{gene_id}|{t}|{intron}|\n')
-                # f.write(f'>{gene}|{t}\n')
-                # f.write(seq+'\n')
                 f.write(protein+'\n')
-        print(rows)
     empty_protein.close()
 
-
-
-
-    # junction_dict=get_junction_information(input_file) #dict[chr]=[[start,end]...]
-    # genes_seq=get_seq(junction_dict,fasta) #dict[chr]=seq #TODO what happen when we have more than one gene from the same chr
-    # create_output_file(junction_dict,genes_seq,n,startr,frame,output_path)
+if __name__== "__main__":
+    input_file,fasta,n,startr,frame,output_path=get_args()
+    if input_file.endswith('reference.txt'):
+        output_refernce_file(input_file,fasta,n,startr,frame,output_path)
+    if input_file.endswith('novel.txt'):
+         output_novel_file(input_file,fasta,n,startr,frame,output_path)
     
     
     
