@@ -1,7 +1,7 @@
 '''
 conda activate bio
 cd bio_translation
-python translation.py -i /home/ls/rachelcw/projects/BIO/proteomics/cll_sf3b1_proteomics_novel.txt -o /home/ls/rachelcw/projects/BIO/proteomics/cll_sf3b1_proteomics_novel_protein.txt
+python translation.py -i /data01/private/projects/splicing_cll/results/proteomics/mutated_cll_sf3b1_proteomics_reference.txt -o /data01/private/projects/splicing_cll/results/reference_mutated_protein.txt
 '''
 
 import sys
@@ -258,7 +258,7 @@ def output_refernce_file(input_file,fasta,n,startr,frame,output_path):
                 f.write(f'{protein}\n')
 
 def output_novel_file(input_file,fasta,n,startr,frame,output_path):
-    empty_protein=open('/home/ls/rachelcw/projects/BIO/mutated/empty_protein.txt','w')
+    empty_protein=open('/data01/private/projects/splicing_cll/results/proteomics/results/unmutated_empty_protein.txt','w')
     with open(output_path, "w") as f:
         data=pd.read_csv(input_file,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG","junction","start_read"])
         for junc in data["junction"].unique():
@@ -283,9 +283,12 @@ def output_novel_file(input_file,fasta,n,startr,frame,output_path):
 if __name__== "__main__":
     input_file,fasta,n,startr,frame,output_path=get_args()
     if input_file.endswith('reference.txt'):
+        print("Start to translate reference file")
         output_refernce_file(input_file,fasta,n,startr,frame,output_path)
     if input_file.endswith('novel.txt'):
-         output_novel_file(input_file,fasta,n,startr,frame,output_path)
+        print("Start to translate novel file")
+        output_novel_file(input_file,fasta,n,startr,frame,output_path)
+    print("Done!")
     
     
     
