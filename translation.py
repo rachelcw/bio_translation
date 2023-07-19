@@ -1,7 +1,7 @@
 '''
 conda activate bio
 cd bio_translation
-python translation.py -i /data01/private/projects/splicing_cll/results/proteomics/mutated_cll_sf3b1_proteomics_reference.txt -o /data01/private/projects/splicing_cll/results/reference_mutated_protein.txt
+python translation.py -i /data01/private/projects/splicing_cll/results/proteomics/unmutated_cll_sf3b1_proteomics_reference.txt -o /data01/private/projects/splicing_cll/results/reference_unmutated_protein.txt
 '''
 
 import sys
@@ -258,7 +258,7 @@ def output_refernce_file(input_file,fasta,n,startr,frame,output_path):
                 f.write(f'{protein}\n')
 
 def output_novel_file(input_file,fasta,n,startr,frame,output_path):
-    empty_protein=open('/data01/private/projects/splicing_cll/results/proteomics/results/unmutated_empty_protein.txt','w')
+    empty_protein=open('/data01/private/projects/splicing_cll/results/proteomics/results/mutated_empty_protein.txt','w')
     with open(output_path, "w") as f:
         data=pd.read_csv(input_file,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG","junction","start_read"])
         for junc in data["junction"].unique():
