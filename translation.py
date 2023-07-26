@@ -1,7 +1,7 @@
 '''
 conda activate bio
 cd bio_translation
-python translation.py -i /data01/private/projects/splicing_cll/results/proteomics/unmutated_cll_sf3b1_proteomics_reference.txt -o /data01/private/projects/splicing_cll/results/reference_unmutated_protein.txt
+python translation.py -i "/data01/private/projects/splicing_cll/results/proteomics/analysis.20230724/mutated_cll_sf3b1_proteomics.20230724.novel.txt" -o /data01/private/projects/splicing_cll/results/novel_mutated_protein.20230725.fa
 '''
 
 import sys
@@ -257,8 +257,8 @@ def output_refernce_file(input_file,fasta,n,startr,frame,output_path):
                 f.write(f'>{gene}|{t}\n')
                 f.write(f'{protein}\n')
 
-def output_novel_file(input_file,fasta,n,startr,frame,output_path):
-    empty_protein=open('/data01/private/projects/splicing_cll/results/proteomics/results/mutated_empty_protein.txt','w')
+def output_novel_file(input_file,fasta,n,startr,frame,output_path,analysis):
+    empty_protein=open(f'/data01/private/projects/splicing_cll/results/proteomics/analysis.20230724/results/{analysis}_not_translated_protein.20230725.txt','w')
     with open(output_path, "w") as f:
         data=pd.read_csv(input_file,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG","junction","start_read"])
         for junc in data["junction"].unique():
@@ -286,8 +286,15 @@ if __name__== "__main__":
         print("Start to translate reference file")
         output_refernce_file(input_file,fasta,n,startr,frame,output_path)
     if input_file.endswith('novel.txt'):
-        print("Start to translate novel file")
-        output_novel_file(input_file,fasta,n,startr,frame,output_path)
+        analysis=""
+        if "unmutated" in input_file:
+            print("Start to translate unmutated novel file")
+            analysis="unmutated"
+        else:
+            print("Start to translate mutated novel file")
+            analysis="mutated"
+        
+        output_novel_file(input_file,fasta,n,startr,frame,output_path,analysis)
     print("Done!")
     
     
