@@ -3,23 +3,39 @@
 import pandas as pd
 import pyfaidx as fa
 from translation import get_seq, get_args, start_read, get_intron
+from Bio.SeqRecord import SeqRecord
+from Bio.Seq import Seq
+from Bio import SeqIO
 
-def create_transcriptome_only_transcripts():
-    transcriptome_file_path="/home/ls/rachelcw/projects/salmon/transcriptome.fa"
-    transcript_file=open(transcriptome_file_path,"w")
-    with open("/home/ls/rachelcw/projects/salmon/transcriptome_full_head.fa", "r") as f:
-        transcripts={}
+def convert_fasta_format():
+    with open("/home/ls/rachelcw/projects/salmon/transcriptome.fa", "r") as f:
+        records=[]
         for line in f:
             line=line.strip()
             if line.startswith(">"):
-                transcript=line.split("|")[1]
-                if transcript in transcripts.keys():
-                    transcripts[transcript]+=1
-                else:
-                    transcripts[transcript]=0
-                transcript_file.write(f'>{transcript}_DSJ{transcripts[transcript]}\n')
+                transcript=line.replace(">","")
             else:
-                transcript_file.write(line+'\n')
+                seq=line
+                records.append(SeqRecord(Seq(seq),id=transcript))
+    SeqIO.write(records, "/home/ls/rachelcw/projects/salmon/transcriptome_fasta.fa", "fasta")
+
+
+def create_transcriptome_only_transcripts():
+    transcriptome_file_path="/home/ls/rachelcw/projects/salmon/transcriptome_reference.fa"
+    transcript_file=open(transcriptome_file_path,"w")
+    # with open("/home/ls/rachelcw/projects/salmon/transcriptome_full_head.fa", "r") as f:
+    #     transcripts={}
+    #     for line in f:
+    #         line=line.strip()
+    #         if line.startswith(">"):
+    #             transcript=line.split("|")[1]
+    #             if transcript in transcripts.keys():
+    #                 transcripts[transcript]+=1
+    #             else:
+    #                 transcripts[transcript]=0
+    #             transcript_file.write(f'>{transcript}_DSJ{transcripts[transcript]}\n')
+    #         else:
+    #             transcript_file.write(line+'\n')
     reference_file_path_mut="/data01/private/projects/splicing_cll/results/proteomics/analysis.20230713/mutated_cll_sf3b1_proteomics_reference.txt"
     reference_file_path_unmut="/data01/private/projects/splicing_cll/results/proteomics/analysis.20230713/unmutated_cll_sf3b1_proteomics_reference.txt"
     reference_file_mut=pd.read_csv(reference_file_path_mut,sep='\t',header=None,names=["chr","start","end","strand","ENST","ENSG"])
@@ -85,8 +101,9 @@ def create_transcriptome_file_by_analysis(input_file,fasta,n,startr,frame,output
 if __name__== "__main__":
     # input_file,fasta,n,startr,frame,output_path=get_args()
     # create_transcriptome_file_by_analysis(input_file,fasta,n,startr,frame,output_path)
-    merge_transcriptome_files()
-    create_transcriptome_only_transcripts()
+    # merge_transcriptome_files()
+    # create_transcriptome_only_transcripts()
+    convert_fasta_format()
 
 """ run salmon
 cd salmon
