@@ -49,7 +49,6 @@ def get_args():
     # parser.add_option("-t", "--type", dest="type", default = 'known',
     #               help="type of outpot file: known or novel transcript ")
     
-    
     options, args= parser.parse_args()
 
     if options.input == None:
@@ -123,11 +122,11 @@ def get_seq(locus,fasta,strand):
     sequence=""
     if strand == '-':
         for exon in locus:
-            seq=fasta[exon[0]][int(exon[1])-1:int(exon[2])].complement.reverse.seq
+            seq=fasta[str(exon[0])][int(exon[1])-1:int(exon[2])].complement.reverse.seq
             sequence=sequence+seq
     else: # strand == '+'
         for exon in locus: 
-            seq=fasta[str(exon[0])][exon[1]-1:exon[2]].seq
+            seq=fasta[str(exon[0])][int(exon[1]-1):int(exon[2])].seq
             sequence=sequence+seq
     return sequence
     # junction_seq=dict()
@@ -293,7 +292,6 @@ if __name__== "__main__":
         else:
             print("Start to translate mutated novel file")
             analysis="mutated"
-        
         output_novel_file(input_file,fasta,n,startr,frame,output_path,analysis)
     print("Done!")
     
