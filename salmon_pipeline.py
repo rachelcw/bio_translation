@@ -8,8 +8,10 @@ input_dir = "/private/data/cllmap/data/rna/bams/"
 # Specify Salmon index and output directory
 salmon_index = "/home/ls/rachelcw/projects/salmon/ds_fasta_index"
 output_dir = "quant_results"
+
+# Convert BAM to paired-end FASTQ using Picard's SamToFastq
 def convert_bam_fastq(bam_path, fastq_prefix):
-    subprocess.run(["source activate picard"], shell=True)
+    # subprocess.run(["source activate picard"], shell=True)
     subprocess.run([
         "/home/ls/rachelcw/miniconda3/envs/picard/bin/picard",
         "SamToFastq",
@@ -19,9 +21,9 @@ def convert_bam_fastq(bam_path, fastq_prefix):
     ], check=True)
     print("SamToFastq completed.")
 
+# Run Salmon quantification on the generated FASTQ files
 def sam_quant(fastq_prefix):
     salmon_output_dir = os.path.join(output_dir, fastq_prefix + "_quant")
-
     subprocess.run([
         "/home/ls/rachelcw/miniconda3/envs/salmon1/bin/salmon",
         "quant",
@@ -34,7 +36,7 @@ def sam_quant(fastq_prefix):
     ], check=True)
     print("Salmon quantification completed.")
 
-when you have a list of fastq files already and you want to run salmon on them
+# when you have a list of fastq files already and you want to run salmon on them
 def fastq_to_sam():
     fastq_done=[os.path.splitext(os.path.basename(f))[0] for f in os.listdir(output_dir) if f.endswith(".fastq")]
     fastq_done=[fastq.replace(r'_R1','') for fastq in fastq_done ]
@@ -57,10 +59,8 @@ def fastq_to_sam():
         ], check=True)
 
 # Loop through each BAM file
-
 def pipeline(bam_file):
-    # bam_path = os.path.join(str(input_dir), str(bam_file))
-    bam_path=bam_file
+    bam_path = os.path.join(str(input_dir), str(bam_file)) 
     # Convert BAM to paired-end FASTQ using Picard's SamToFastq
     output_prefix = os.path.splitext(os.path.basename(bam_file))[0]
     fastq_prefix = os.path.join(output_dir, output_prefix)
@@ -77,19 +77,25 @@ def pipeline(bam_file):
 
 
 if __name__== "__main__":
-    
+     
     # Create the output directory if it doesn't exist
     # os.makedirs(output_dir, exist_ok=True)
+
+    # # Loop through each BAM file and run the pipeline 
     bam_files = [f for f in os.listdir(input_dir) if f.endswith(".bam")]
     prefix_bam_files=[os.path.splitext(os.path.basename(f))[0].replace('.out','') for f in bam_files]
-    quant_files=[f for f in os.listdir(output_dir)  if f.endswith("_quant")]
+    quant_files=[f for f in os.listdir(output_dir) if f.endswith("_quant")]
     sf_files=[f for f in quant_files for sf in os.listdir(os.path.join(output_dir,f)) if sf.endswith(".sf") ]
     prefix_sf_files=[os.path.splitext(os.path.basename(f))[0] for f in sf_files]
     list_samples=[f'{s}.out.bam' for s in prefix_bam_files if s not in prefix_sf_files ]
-    
+    print(list_samples)
+
+    # run single process
+    pipeline(list_samples[0])
+
     # run multi process
-    with Pool(10) as p:
-        p.map(pipeline, list_samples)
+    # with Pool(max_workers=90) as pool:
+    #     pool.map(pipeline, list_samples)
 
     
 
