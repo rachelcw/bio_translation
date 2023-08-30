@@ -10,6 +10,9 @@ salmon_index = "/home/ls/rachelcw/projects/salmon/ds_fasta_index"
 output_dir = "quant_results"
 
 # Convert BAM to paired-end FASTQ using Picard's SamToFastq
+# check that fastq file has 4 lines per read
+# check that you have enoungh space in JVM, if not, 
+# increase the memory in picard file in /home/ls/rachelcw/miniconda3/envs/picard/bin/picard in the part of java -Xmx
 def convert_bam_fastq(bam_path, fastq_prefix):
     # subprocess.run(["source activate picard"], shell=True)
     subprocess.run([
@@ -22,6 +25,7 @@ def convert_bam_fastq(bam_path, fastq_prefix):
     print("SamToFastq completed.")
 
 # Run Salmon quantification on the generated FASTQ files
+# check that you
 def sam_quant(fastq_prefix):
     salmon_output_dir = os.path.join(output_dir, fastq_prefix + "_quant")
     subprocess.run([
@@ -45,7 +49,8 @@ def fastq_to_sam():
     for fq_prefix in fastq_done:
     # Run Salmon quantification on the generated FASTQ files
         print("Processing " + fq_prefix)
-        salmon_output_dir = os.path.join(output_dir, fq_prefix + "_quant")
+        salmon_output_dir = os.path.join(fq_prefix + "_quant")
+        print(salmon_output_dir)
         fastq_prefix = os.path.join(output_dir, fq_prefix)
         subprocess.run([
             "/home/ls/rachelcw/miniconda3/envs/salmon1/bin/salmon",
@@ -61,15 +66,14 @@ def fastq_to_sam():
 # Loop through each BAM file
 def pipeline(bam_file):
     bam_path = os.path.join(str(input_dir), str(bam_file)) 
-    # Convert BAM to paired-end FASTQ using Picard's SamToFastq
+    print(bam_path)
+    # # Convert BAM to paired-end FASTQ using Picard's SamToFastq
     output_prefix = os.path.splitext(os.path.basename(bam_file))[0]
     fastq_prefix = os.path.join(output_dir, output_prefix)
-
+    print("Processing " + fastq_prefix)
     convert_bam_fastq(bam_path, fastq_prefix)
     sam_quant(fastq_prefix)
-    
-    print("Salmon quantification completed.")
-    # Remove the generated FASTQ files
+    # # # Remove the generated FASTQ files
     os.remove(fastq_prefix + "_R1.fastq")
     os.remove(fastq_prefix + "_R2.fastq")
     print("fastq files removed")
@@ -90,12 +94,12 @@ if __name__== "__main__":
     list_samples=[f'{s}.out.bam' for s in prefix_bam_files if s not in prefix_sf_files ]
     print(list_samples)
 
-    # run single process
-    pipeline(list_samples[0])
+    # # run single process
+    # pipeline(list_samples[0])
 
-    # run multi process
-    # with Pool(max_workers=90) as pool:
-    #     pool.map(pipeline, list_samples)
+    # # run multi process
+    with Pool(max_workers=90) as pool:
+        pool.map(pipeline, list_samples)
 
     
 
