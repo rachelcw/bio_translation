@@ -104,8 +104,3 @@ if __name__== "__main__":
     # merge_transcriptome_files()
     # create_transcriptome_only_transcripts()
     convert_fasta_format()
-
-""" run salmon
-cd salmon
-salmon quant -t transcriptome.fa  -a /data01/private/data/cllmap/data/rna/bams/DKFZ-CLL65.Aligned.sortedByCoord.out.bam /data01/private/data/cllmap/data/rna/bams/DKFZ-CLL72.Aligned.sortedByCoord.out.bam --validateMappings -o ds_salmon_quant
-"""

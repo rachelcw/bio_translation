@@ -3,7 +3,7 @@
 # # Salmon index # #
 # source activate salmon1
 # transcriptome="/home/ls/rachelcw/projects/salmon/transcriptome.fa"
-# ~/miniconda3/envs/salmon1/bin/salmon index -t "$transcriptome" -i ds_index -k 1 
+# ~/miniconda3/envs/salmon1/bin/salmon index -t "$transcriptome" -i ds_index
 # conda deactivate
 
 # List of BAM files
