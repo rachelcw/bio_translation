@@ -279,6 +279,19 @@ def output_novel_file(input_file,fasta,n,startr,frame,output_path,analysis):
                 f.write(protein+'\n')
     empty_protein.close()
 
+def check_frameshift(seq):
+    """
+    The function get seq and check if there is a frameshift
+    Args:
+        seq (string): the sequence for translating
+
+    Returns:
+        boolean: True if there is a frameshift 
+    """
+    if len(seq)%3 != 0:
+        return True
+    return False
+
 if __name__== "__main__":
     input_file,fasta,n,startr,frame,output_path=get_args()
     if input_file.endswith('reference.txt'):
